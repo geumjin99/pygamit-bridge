@@ -1,0 +1,1123 @@
+% ============================================================
+% PyGAMIT-Bridge User Manual
+% ============================================================
+\documentclass[11pt, a4paper]{article}
+\usepackage[margin=2.5cm]{geometry}
+\usepackage{graphicx}
+\usepackage{amsmath}
+\usepackage{url}
+\usepackage{hyperref}
+\usepackage{booktabs}
+\usepackage{longtable}
+\usepackage{multirow}
+\usepackage{listings}
+\usepackage{xcolor}
+\usepackage{fancyhdr}
+\usepackage{titlesec}
+\usepackage{enumitem}
+\usepackage{tcolorbox}
+\tcbuselibrary{listingsutf8, skins, breakable}
+% No bibliography needed for the manual
+
+% 页眉页脚
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[L]{\small PyGAMIT-Bridge User Manual}
+\fancyhead[R]{\small v0.1.0}
+\fancyfoot[C]{\thepage}
+\renewcommand{\headrulewidth}{0.4pt}
+
+% 代码样式
+\definecolor{codegreen}{rgb}{0.0, 0.5, 0.0}
+\definecolor{codegray}{rgb}{0.5, 0.5, 0.5}
+\definecolor{codebg}{rgb}{0.97, 0.97, 0.97}
+\definecolor{codeborder}{rgb}{0.82, 0.82, 0.82}
+\definecolor{cmdblue}{rgb}{0.1, 0.2, 0.6}
+\definecolor{warnbg}{rgb}{1.0, 0.97, 0.90}
+\definecolor{warnframe}{rgb}{0.9, 0.7, 0.2}
+\definecolor{notebg}{rgb}{0.92, 0.95, 1.0}
+\definecolor{noteframe}{rgb}{0.3, 0.5, 0.8}
+\definecolor{tipbg}{rgb}{0.92, 1.0, 0.92}
+\definecolor{tipframe}{rgb}{0.2, 0.7, 0.3}
+
+\lstset{
+  basicstyle=\ttfamily\small,
+  backgroundcolor=\color{codebg},
+  keywordstyle=\color{blue},
+  commentstyle=\color{codegreen},
+  stringstyle=\color{red!70!black},
+  frame=single,
+  framerule=0.4pt,
+  rulecolor=\color{codeborder},
+  breaklines=true,
+  columns=fullflexible,
+  captionpos=b,
+  numberstyle=\tiny\color{codegray},
+  showstringspaces=false,
+  xleftmargin=1em,
+  framexleftmargin=0.5em,
+}
+
+% 自定义提示框
+\newtcolorbox{notebox}{
+  colback=notebg, colframe=noteframe, coltitle=white,
+  title={\textbf{Note}}, fonttitle=\bfseries\small,
+  boxrule=0.5pt, arc=2pt, left=6pt, right=6pt,
+  top=4pt, bottom=4pt, breakable
+}
+
+\newtcolorbox{warnbox}{
+  colback=warnbg, colframe=warnframe, coltitle=black,
+  title={\textbf{Warning}}, fonttitle=\bfseries\small,
+  boxrule=0.5pt, arc=2pt, left=6pt, right=6pt,
+  top=4pt, bottom=4pt, breakable
+}
+
+\newtcolorbox{tipbox}{
+  colback=tipbg, colframe=tipframe, coltitle=white,
+  title={\textbf{Tip}}, fonttitle=\bfseries\small,
+  boxrule=0.5pt, arc=2pt, left=6pt, right=6pt,
+  top=4pt, bottom=4pt, breakable
+}
+
+% 标题层级格式
+\titleformat{\section}{\Large\bfseries}{}{0em}{}[\titlerule]
+\titleformat{\subsection}{\large\bfseries}{}{0em}{}
+\titleformat{\subsubsection}{\normalsize\bfseries}{}{0em}{}
+
+% ============================================================
+\begin{document}
+
+% --- 封面 ---
+\begin{titlepage}
+\centering
+\vspace*{3cm}
+{\Huge\bfseries PyGAMIT-Bridge\\[0.3cm]User Manual\par}
+\vspace{1.5cm}
+{\Large A Python Toolkit for Bridging Modern GNSS Data Formats\\with GAMIT/GLOBK Processing\par}
+\vspace{2cm}
+{\large Version 0.1.0\par}
+\vspace{0.5cm}
+{\large February 2025\par}
+\vspace{3cm}
+{\large Jinzhen Han\par}
+\vspace{0.5cm}
+{\normalsize Sungkyunkwan University, South Korea\par}
+\vspace{2cm}
+{\small \url{https://github.com/geumjin99/pygamit-bridge}\par}
+\end{titlepage}
+
+% --- 目录 ---
+\tableofcontents
+\newpage
+
+% ============================================================
+\section{Introduction}
+\label{sec:intro}
+
+PyGAMIT-Bridge is a lightweight Python toolkit designed to bridge the compatibility gap between modern International GNSS Service (IGS) data infrastructure and the GAMIT/GLOBK software suite. Since 2020, three major changes in the GNSS data ecosystem have introduced friction into routine GAMIT processing workflows:
+
+\begin{enumerate}
+  \item \textbf{CDDIS Earthdata Authentication} --- NASA's CDDIS discontinued anonymous FTP access in October 2020, requiring Earthdata Login. Failed authentication results in an HTML login page disguised as a data file, causing silent downstream failures.
+  \item \textbf{IGS Long Filenames} --- Starting GPS Week 2238 (November 2022), IGS adopted new long product filenames, while GAMIT's internal scripts expect legacy short filenames.
+  \item \textbf{RINEX 3/4 Incompatibility} --- GAMIT 10.71's \texttt{makexp} module cannot correctly parse RINEX 3's \texttt{SYS / \# / OBS TYPES} header, causing empty batch files and breaking the processing chain.
+\end{enumerate}
+
+PyGAMIT-Bridge addresses these issues through three focused modules, as summarized in Table~\ref{tab:overview}.
+
+\begin{table}[ht]
+\centering
+\caption{PyGAMIT-Bridge module overview}
+\label{tab:overview}
+\begin{tabular}{@{}lll@{}}
+\toprule
+Module & Problem Addressed & Key Source File \\
+\midrule
+1. Smart Downloader & CDDIS Earthdata authentication & \texttt{downloader.py} \\
+2. Format Bridge    & RINEX 3/4 incompatibility      & \texttt{converter.py} \\
+                    & Empty \texttt{makexp} batch file & \texttt{batch\_fallback.py} \\
+                    & IGS long filename mapping       & \texttt{preprocessor.py} \\
+3. Output Parser    & Non-standardized GAMIT output   & \texttt{parser.py} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Design Philosophy}
+
+\begin{itemize}
+  \item \textbf{Pure Python, Standard Library Only} --- No third-party dependencies. Requires only Python $\geq$ 3.7.
+  \item \textbf{Thin Wrapper} --- Serves as a preprocessing and postprocessing layer around existing GAMIT workflows, without modifying GAMIT's Fortran source code.
+  \item \textbf{Modular} --- Each module can be used independently.
+\end{itemize}
+
+\subsection{File Structure}
+
+\begin{lstlisting}[language={}, caption={Project directory layout}]
+pygamit-bridge/
+|-- setup.py                    # Installation script
+|-- bin/                        # (reserved for future scripts)
+|-- examples/
+|   `-- process_day.py          # End-to-end usage example
+`-- pygamit_bridge/
+    |-- __init__.py             # Package metadata (v0.1.0)
+    |-- cli.py                  # Unified CLI entry point
+    |-- downloader.py           # Module 1: CDDIS smart downloader
+    |-- converter.py            # Module 2a: RINEX 3 -> 2 converter
+    |-- batch_fallback.py       # Module 2b: makexp batch fallback
+    |-- preprocessor.py         # Module 2c: Product preprocessing
+    |-- parser.py               # Module 3: Output parser
+    `-- utils.py                # GPS time utilities
+\end{lstlisting}
+
+
+% ============================================================
+\section{Installation}
+\label{sec:install}
+
+\subsection{System Requirements}
+
+\begin{itemize}
+  \item Python $\geq$ 3.7
+  \item GAMIT/GLOBK 10.71 (installed and functional)
+  \item \texttt{CRX2RNX} utility for Compact RINEX decompression
+  \item \texttt{wget} command-line tool (for data downloading)
+  \item NASA Earthdata account (\url{https://urs.earthdata.nasa.gov})
+\end{itemize}
+
+\subsection{Installation Steps}
+
+\begin{lstlisting}[language=bash, caption={Installation from source}]
+# Clone the repository
+git clone https://github.com/geumjin99/pygamit-bridge.git
+cd pygamit-bridge
+
+# Install in development mode
+pip install -e .
+
+# Verify installation
+pygamit-bridge --version
+# Output: 0.1.0
+\end{lstlisting}
+
+\subsection{Earthdata Configuration}
+
+Before using the downloader module, you must configure NASA Earthdata credentials. The toolkit uses \texttt{wget} with cookie-based authentication.
+
+\begin{lstlisting}[language=bash, caption={Earthdata cookie setup}]
+# Create a .netrc file for Earthdata authentication
+echo "machine urs.earthdata.nasa.gov login <USERNAME> password <PASSWORD>" \
+    >> ~/.netrc
+chmod 0600 ~/.netrc
+
+# Create .urs_cookies file (wget will populate it automatically)
+touch ~/.urs_cookies
+\end{lstlisting}
+
+\begin{warnbox}
+The \texttt{.netrc} file contains your credentials in plain text. Ensure proper file permissions (\texttt{chmod 0600}) and never commit it to version control.
+\end{warnbox}
+
+
+% ============================================================
+\section{Module 1: Smart Downloader}
+\label{sec:downloader}
+
+The \texttt{downloader} module (\texttt{downloader.py}) automates retrieval of GNSS observation data and IGS precise products from CDDIS with Earthdata cookie-based authentication.
+
+\subsection{Key Features}
+
+\begin{itemize}
+  \item \textbf{Earthdata Authentication} --- Wraps \texttt{wget} with cookie parameters (\texttt{--load-cookies}, \texttt{--save-cookies}, \texttt{--auth-no-challenge}).
+  \item \textbf{Silent Failure Detection} --- Verifies downloaded files using two checks:
+    \begin{enumerate}
+      \item \textbf{Gzip magic number} (\texttt{0x1f8b}) confirms the file is a valid compressed archive.
+      \item \textbf{HTML content sniffing} scans the first 512 bytes for HTML tags (\texttt{<html>}, \texttt{<head>}, \texttt{<!doctype>}).
+    \end{enumerate}
+  \item \textbf{Dual-Format Retrieval} --- First attempts the IGS long filename convention (post-2022), iterating over 14 common country codes (ATA, AUS, JPN, USA, etc.), then falls back to legacy short filenames.
+  \item \textbf{Skip Existing Files} --- Checks for already-downloaded valid files to avoid redundant transfers.
+\end{itemize}
+
+\subsection{Country Code Iteration}
+
+When constructing RINEX 3 long filenames, the station's country code is required but not always known. The downloader iterates over a built-in list of common IGS station country codes:
+
+\begin{lstlisting}[language={}, caption={Built-in country codes}]
+ATA, AUS, JPN, USA, ZAF, CHL, FRA,
+NZL, NOR, DEU, GBR, ARG, RUS, CHN
+\end{lstlisting}
+
+\begin{notebox}
+For stations in countries not in this list, the downloader will fall back to the short filename format. This fallback ensures data retrieval succeeds for most IGS stations without requiring users to maintain station--country lookup tables.
+\end{notebox}
+
+\subsection{API Reference}
+
+\subsubsection{\texttt{download\_rinex()}}
+
+\begin{lstlisting}[language=Python, caption={download\_rinex function signature}]
+def download_rinex(station, year, doy, output_dir):
+    """Download single-station single-day RINEX observation data.
+
+    Args:
+        station (str): 4-character station name (e.g., 'mcm4')
+        year (int): 4-digit year
+        doy (int): Day of year (1--366)
+        output_dir (str): Output root directory
+
+    Returns:
+        str: Status string
+             'OK: <filename> (<size>KB)'
+             'EXISTS: <filename>'
+             'FAIL: <station> <year> <doy>'
+    """
+\end{lstlisting}
+
+The output directory structure is: \texttt{<output\_dir>/<year>/<doy>/}
+
+\subsubsection{\texttt{download\_products()}}
+
+\begin{lstlisting}[language=Python, caption={download\_products function signature}]
+def download_products(year, doy, output_dir):
+    """Download IGS precise products (SP3, CLK, ERP) and
+    broadcast ephemeris.
+
+    Args:
+        year (int): 4-digit year
+        doy (int): Day of year
+        output_dir (str): Product output root directory
+
+    Returns:
+        list: Status strings for each product
+    """
+\end{lstlisting}
+
+Downloaded products include:
+\begin{itemize}
+  \item \texttt{SP3} --- Precise orbit (15-min interval)
+  \item \texttt{CLK} --- Precise clock (30-sec interval)
+  \item \texttt{ERP} --- Earth rotation parameters
+  \item \texttt{BRDC} --- Broadcast navigation ephemeris
+\end{itemize}
+
+\subsection{CLI Usage}
+
+\begin{lstlisting}[language=bash, caption={Download command examples}]
+# Download RINEX and products for 4 stations, 7 days
+pygamit-bridge download \
+    --stations mcm4,cas1,dav1,maw1 \
+    --year 2025 --start-doy 1 --end-doy 7 \
+    --output ./data/rinex \
+    --products-output ./data/products
+
+# Download only station data (no products)
+pygamit-bridge download \
+    --stations mcm4 \
+    --year 2025 --start-doy 1 --end-doy 1 \
+    --stations-only
+
+# Download only products (no station data)
+pygamit-bridge download \
+    --stations mcm4 \
+    --year 2025 --start-doy 1 --end-doy 1 \
+    --products-only
+\end{lstlisting}
+
+\begin{table}[ht]
+\centering
+\caption{\texttt{download} subcommand arguments}
+\label{tab:download-args}
+\begin{tabular}{@{}llll@{}}
+\toprule
+Argument & Required & Default & Description \\
+\midrule
+\texttt{--stations}        & Yes & --- & Comma-separated station list \\
+\texttt{--year}            & Yes & --- & 4-digit year \\
+\texttt{--start-doy}       & No  & 1   & Start day of year \\
+\texttt{--end-doy}         & No  & 1   & End day of year \\
+\texttt{--output}          & No  & \texttt{./data/rinex}    & RINEX output directory \\
+\texttt{--products-output} & No  & \texttt{./data/products} & Products output directory \\
+\texttt{--stations-only}   & No  & False & Download only station data \\
+\texttt{--products-only}   & No  & False & Download only products \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+
+% ============================================================
+\section{Module 2: Format Bridge}
+\label{sec:bridge}
+
+The Format Bridge consists of three sub-modules that handle the cascading format transformations required between modern IGS data and GAMIT's internal expectations.
+
+% --- 2a: Converter ---
+\subsection{RINEX 3-to-2 Converter (\texttt{converter.py})}
+\label{sec:converter}
+
+\subsubsection{Problem}
+
+GAMIT 10.71's \texttt{makexp} module cannot correctly parse the \texttt{SYS / \# / OBS TYPES} header records introduced in RINEX 3, which declare observation types grouped by satellite system. This causes \texttt{makexp} to produce an empty batch file, breaking the entire processing chain.
+
+\subsubsection{Solution}
+
+The converter performs a complete format transformation:
+
+\begin{enumerate}
+  \item \textbf{Header conversion}: Maps per-system observation type declarations (\texttt{SYS / \# / OBS TYPES}) to the unified \texttt{\# / TYPES OF OBSERV} format of RINEX 2.11.
+  \item \textbf{Observation type mapping}: Translates 52 three-character RINEX 3 observation codes to their RINEX 2 two-character equivalents, with de-duplication and order preservation.
+  \item \textbf{Data section conversion}: Restructures per-satellite single-line records (RINEX 3) to the traditional multi-line format with epoch header containing the satellite list (RINEX 2).
+\end{enumerate}
+
+\subsubsection{Observation Type Mapping Table}
+
+Table~\ref{tab:obs-mapping} shows the complete RINEX 3 to RINEX 2 observation type mapping implemented in the converter.
+
+\begin{longtable}{@{}ll|ll|ll@{}}
+\caption{RINEX 3 $\to$ 2 observation type mapping (GPS only)}
+\label{tab:obs-mapping} \\
+\toprule
+RINEX 3 & RINEX 2 & RINEX 3 & RINEX 2 & RINEX 3 & RINEX 2 \\
+\midrule
+\endfirsthead
+\toprule
+RINEX 3 & RINEX 2 & RINEX 3 & RINEX 2 & RINEX 3 & RINEX 2 \\
+\midrule
+\endhead
+\midrule
+\multicolumn{6}{r}{\textit{Continued on next page}} \\
+\endfoot
+\bottomrule
+\endlastfoot
+% L1 Pseudorange
+C1C & C1 & C1S & C1 & C1L & C1 \\
+C1X & C1 & C1P & P1 & C1W & P1 \\
+% L1 Carrier Phase
+L1C & L1 & L1S & L1 & L1L & L1 \\
+L1X & L1 & L1P & L1 & L1W & L1 \\
+% L1 Doppler
+D1C & D1 & D1S & D1 & D1L & D1 \\
+D1X & D1 &     &    &     &    \\
+% L1 Signal Strength
+S1C & S1 & S1S & S1 & S1L & S1 \\
+S1X & S1 &     &    &     &    \\
+\midrule
+% L2 Pseudorange
+C2C & C2 & C2S & C2 & C2L & C2 \\
+C2X & C2 & C2P & P2 & C2W & P2 \\
+% L2 Carrier Phase
+L2C & L2 & L2S & L2 & L2L & L2 \\
+L2X & L2 & L2P & L2 & L2W & L2 \\
+% L2 Doppler
+D2C & D2 & D2S & D2 & D2L & D2 \\
+D2X & D2 &     &    &     &    \\
+% L2 Signal Strength
+S2C & S2 & S2S & S2 & S2L & S2 \\
+S2X & S2 &     &    &     &    \\
+\midrule
+% L5
+C5I & C5 & C5Q & C5 & C5X & C5 \\
+L5I & L5 & L5Q & L5 & L5X & L5 \\
+D5I & D5 & D5Q & D5 & D5X & D5 \\
+S5I & S5 & S5Q & S5 & S5X & S5 \\
+\end{longtable}
+
+\begin{notebox}
+The converter only retains GPS (G-system) observations. Multi-GNSS observations (GLONASS, Galileo, BeiDou) are discarded during conversion, as GAMIT's double-difference processing is typically configured for GPS-only or requires system-specific handling.
+\end{notebox}
+
+\subsubsection{API Reference}
+
+\begin{lstlisting}[language=Python, caption={convert\_rinex3\_to\_rinex2 function}]
+def convert_rinex3_to_rinex2(input_file, output_file):
+    """Complete RINEX 3.x to RINEX 2.11 format conversion.
+
+    If the input file is already RINEX 2, it is copied directly.
+
+    Args:
+        input_file (str): Path to RINEX 3.x input file
+        output_file (str): Path for RINEX 2.11 output file
+
+    Returns:
+        bool: True if conversion succeeded
+    """
+\end{lstlisting}
+
+\subsubsection{CLI Usage}
+
+\begin{lstlisting}[language=bash, caption={Convert command example}]
+pygamit-bridge convert \
+    --input MCM400ATA_R_20250010000_01D_30S_MO.rnx \
+    --output mcm40010.25o
+\end{lstlisting}
+
+\begin{table}[ht]
+\centering
+\caption{\texttt{convert} subcommand arguments}
+\begin{tabular}{@{}llll@{}}
+\toprule
+Argument & Required & Alias & Description \\
+\midrule
+\texttt{--input}  & Yes & \texttt{-i} & RINEX 3 input file path \\
+\texttt{--output} & Yes & \texttt{-o} & RINEX 2 output file path \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+
+% --- 2b: Batch Fallback ---
+\subsection{Batch File Fallback (\texttt{batch\_fallback.py})}
+\label{sec:batch}
+
+\subsubsection{Problem}
+
+Even after RINEX 3-to-2 conversion, certain receiver type and firmware version combinations cause GAMIT's \texttt{makexp} to produce an empty \texttt{.makex.batch} file, preventing X-file generation.
+
+\subsubsection{Solution}
+
+The \texttt{batch\_fallback} module directly parses RINEX headers to extract receiver metadata and generates a syntactically valid batch file. It includes a built-in receiver type mapping table:
+
+\begin{table}[ht]
+\centering
+\caption{Receiver type to GAMIT abbreviation mapping}
+\label{tab:receiver-map}
+\begin{tabular}{@{}ll@{}}
+\toprule
+Receiver Manufacturer & GAMIT Abbreviation \\
+\midrule
+SEPT (Septentrio)  & SEP \\
+JAVAD              & JAV \\
+TRIMBLE            & TRM \\
+LEICA              & LEI \\
+ASHTECH            & ASH \\
+TOPCON             & TOP \\
+NOVATEL            & NOV \\
+TPS                & TPS \\
+ROGUE              & ROG \\
+\textit{(Other)}   & \textit{First 3 characters} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsubsection{API Reference}
+
+\begin{lstlisting}[language=Python, caption={Batch fallback functions}]
+def generate_makex_batch(expt, year, doy, orbt='igsg',
+                         nav_file=None, xver='5',
+                         rinex_dir='./'):
+    """Generate GAMIT makex batch file content.
+
+    Args:
+        expt (str): Experiment name (4-char, e.g., 'anta')
+        year (int): 4-digit year
+        doy (str): Day of year (zero-padded, e.g., '001')
+        orbt (str): Orbit type identifier (default 'igsg')
+        nav_file (str): Navigation filename; auto-generated
+                        if None
+        xver (str): X-file version (default '5')
+        rinex_dir (str): Directory containing RINEX files
+
+    Returns:
+        str: Batch file content, or None on failure
+    """
+
+def write_batch_file(expt, year, doy, output_dir='./',
+                     **kwargs):
+    """Generate and write makex batch file to disk.
+
+    Args:
+        expt (str): Experiment name
+        year (int): 4-digit year
+        doy (str): Day of year
+        output_dir (str): Output directory
+        **kwargs: Forwarded to generate_makex_batch()
+
+    Returns:
+        str: Path to batch file, or None on failure
+    """
+\end{lstlisting}
+
+
+% --- 2c: Preprocessor ---
+\subsection{Preprocessor (\texttt{preprocessor.py})}
+\label{sec:preprocessor}
+
+The preprocessor module replaces traditional shell scripts with a Python-native pipeline for preparing data for GAMIT processing.
+
+\subsubsection{Processing Pipeline}
+
+For each station, the preprocessor performs:
+
+\begin{enumerate}
+  \item \textbf{Decompress} Compact RINEX (\texttt{.crx.gz}) $\to$ \texttt{.crx} (gunzip) $\to$ \texttt{.rnx} (\texttt{CRX2RNX})
+  \item \textbf{Convert} RINEX 3 $\to$ RINEX 2.11 (using the converter module)
+  \item \textbf{Rename} to GAMIT short filename format (\texttt{ssss\{doy\}0.\{yr2\}o})
+\end{enumerate}
+
+For products:
+\begin{enumerate}
+  \item \textbf{Decompress} \texttt{.gz} files
+  \item \textbf{Create symlinks} from IGS long filenames to GAMIT short format:
+    \begin{itemize}
+      \item \texttt{IGS0OPSFIN\_*ORB.SP3} $\to$ \texttt{igs\{week\}\{dow\}.sp3}
+      \item \texttt{IGS0OPSFIN\_*CLK.CLK} $\to$ \texttt{igs\{week\}\{dow\}.clk}
+    \end{itemize}
+\end{enumerate}
+
+\subsubsection{API Reference}
+
+\begin{lstlisting}[language=Python, caption={Preprocessor functions}]
+def prepare_rinex(year, doy, data_dir, expt_dir,
+                  stations=None):
+    """Preprocess RINEX data: decompress, convert, rename.
+
+    Args:
+        year (int): 4-digit year
+        doy (int): Day of year
+        data_dir (str): Raw data root directory (with
+                        year/doy subdirectories)
+        expt_dir (str): GAMIT experiment directory
+        stations (list): Station filter (None = auto-detect)
+
+    Returns:
+        int: Number of stations successfully processed
+    """
+
+def prepare_products(year, doy, data_dir, expt_dir):
+    """Prepare IGS products with long-to-short filename
+    mapping.
+
+    Args:
+        year (int): 4-digit year
+        doy (int): Day of year
+        data_dir (str): Product data root directory
+        expt_dir (str): GAMIT experiment directory
+
+    Returns:
+        int: Number of product files processed
+    """
+
+def prepare_broadcast(year, doy, data_dir, expt_dir):
+    """Prepare broadcast ephemeris file.
+
+    Returns:
+        bool: True if successful
+    """
+
+def link_tables(gg_dir, expt_dir, template_dir=None):
+    """Symlink GAMIT global tables and local configuration
+    to the experiment directory.
+
+    Args:
+        gg_dir (str): GAMIT installation root (e.g., ~/gg)
+        expt_dir (str): GAMIT experiment directory
+        template_dir (str): Optional local config template dir
+    """
+\end{lstlisting}
+
+\subsubsection{CLI Usage}
+
+\begin{lstlisting}[language=bash, caption={Preprocess command example}]
+pygamit-bridge preprocess \
+    --year 2025 --doy 1 \
+    --data-dir ./data/rinex \
+    --products-dir ./data/products \
+    --expt-dir ./gamit/expt/2025001 \
+    --gg-dir ~/gg \
+    --stations mcm4,cas1,dav1,maw1
+\end{lstlisting}
+
+\begin{table}[ht]
+\centering
+\caption{\texttt{preprocess} subcommand arguments}
+\begin{tabular}{@{}llll@{}}
+\toprule
+Argument & Required & Default & Description \\
+\midrule
+\texttt{--year}         & Yes & ---  & 4-digit year \\
+\texttt{--doy}          & Yes & ---  & Day of year \\
+\texttt{--data-dir}     & Yes & ---  & Raw data directory \\
+\texttt{--products-dir} & No  & None & Products directory \\
+\texttt{--expt-dir}     & Yes & ---  & GAMIT experiment directory \\
+\texttt{--stations}     & No  & None & Station filter (comma-separated) \\
+\texttt{--gg-dir}       & No  & None & GAMIT installation directory \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+
+% ============================================================
+\section{Module 3: Output Parser}
+\label{sec:parser}
+
+The \texttt{parser} module (\texttt{parser.py}) provides standardized extraction of GAMIT processing results from o-files, q-files, and summary files into structured CSV and JSON formats.
+
+\subsection{Extracted Data Categories}
+
+\subsubsection{ZTD (Zenith Total Delay)}
+
+Extracts \texttt{ATMZEN} records from GAMIT o-files. Handles both:
+\begin{itemize}
+  \item \textbf{Daily mean values} --- Lines without epoch index. The final column contains the absolute ZTD in meters.
+  \item \textbf{Piecewise-linear segments} --- Lines with epoch index (1--13, for 2-hour intervals). The adjustment values are added to the daily mean to obtain absolute ZTD.
+\end{itemize}
+
+The parser correctly handles Fortran \texttt{D}-format exponents (e.g., \texttt{-0.1066D-01}).
+
+\begin{lstlisting}[language={}, caption={Example GAMIT ATMZEN output lines}]
+# Daily mean ZTD (no epoch index)
+13*CAS1 ATMZEN  m           2.2655438832-0.1066D-01 ...
+# Piecewise segment (epoch 1)
+17*CAS1 ATMZEN  m   1       0.0000000000-0.2437D-01 ...
+\end{lstlisting}
+
+\subsubsection{Station Coordinates}
+
+Extracts geocentric spherical coordinates (GEOC latitude, longitude, radius) from o-file lines matching patterns like:
+
+\begin{lstlisting}[language={}, caption={Example GAMIT coordinate output}]
+1*CAS1 GEOC LAT  dms    S66:08:28.75542 0.1971D-02 ...
+2*CAS1 GEOC LONG dms   E110:31:10.94427-0.2388D-02 ...
+3*CAS1 RADIUS    km     6360.2587609893-0.2210D-02 ...
+\end{lstlisting}
+
+Each coordinate component includes: final value, adjustment (meters), and formal error (meters).
+
+\subsubsection{Baselines}
+
+Extracts inter-station baseline lengths and formal errors from o-file baseline sections.
+
+\subsubsection{Quality Metrics}
+
+Extracted from summary files and o-files:
+\begin{itemize}
+  \item Prefit and postfit \textbf{nrms} (normalized root-mean-square)
+  \item Phase ambiguity counts: total, WL-fixed, NL-fixed
+  \item Ambiguity \textbf{fixing rates}: WL\% and NL\%
+  \item Number of double-difference \textbf{observations} and \textbf{parameters}
+\end{itemize}
+
+\begin{notebox}
+If quality metrics are not found in summary files, the parser falls back to q-files for nrms extraction.
+\end{notebox}
+
+\subsection{API Reference}
+
+\begin{lstlisting}[language=Python, caption={Parser functions}]
+def parse_ztd(session_dir, expt='anta'):
+    """Extract ZTD estimates from GAMIT o-files.
+
+    Returns:
+        list: [{'station': str, 'epoch_idx': int,
+                'ztd_m': float, 'ztd_mm': float,
+                'adjustment_m': float,
+                'sigma_m': float, 'sigma_mm': float}, ...]
+    """
+
+def parse_positions(session_dir, expt='anta'):
+    """Extract station coordinate estimates.
+
+    Returns:
+        dict: {station: {'lat': str, 'lon': str,
+                         'radius_km': float,
+                         'lat_adj_m': float,
+                         'lon_adj_m': float,
+                         'radius_adj_m': float,
+                         'lat_sigma_m': float, ...}}
+    """
+
+def parse_baselines(session_dir, expt='anta'):
+    """Extract baseline lengths and formal errors.
+
+    Returns:
+        list: [{'from': str, 'to': str,
+                'length_m': float, 'sigma_m': float}, ...]
+    """
+
+def parse_summary(session_dir, expt='anta'):
+    """Extract quality metrics from summary/q-files.
+
+    Returns:
+        dict: {'nrms': float, 'postfit_nrms': float,
+               'num_ambiguities': int,
+               'wl_fixed': int, 'nl_fixed': int,
+               'wl_rate': float, 'nl_rate': float,
+               'num_observations': int,
+               'num_parameters': int}
+    """
+
+def parse_session(session_dir, expt='anta'):
+    """One-stop parsing of all GAMIT session outputs.
+
+    Returns:
+        dict: {'ztd': [...], 'positions': {...},
+               'baselines': [...], 'summary': {...}}
+    """
+
+def export_csv(results, output_path):
+    """Export ZTD data to CSV format."""
+
+def export_json(results, output_path):
+    """Export all parsed results to JSON format."""
+\end{lstlisting}
+
+\subsection{CLI Usage}
+
+\begin{lstlisting}[language=bash, caption={Parse command examples}]
+# Parse and export to JSON
+pygamit-bridge parse \
+    --session-dir ./gamit/expt/2025001 \
+    --expt anta \
+    --output results.json
+
+# Parse and export to CSV (ZTD data only)
+pygamit-bridge parse \
+    --session-dir ./gamit/expt/2025001 \
+    -o ztd_results.csv
+\end{lstlisting}
+
+\begin{table}[ht]
+\centering
+\caption{\texttt{parse} subcommand arguments}
+\begin{tabular}{@{}llll@{}}
+\toprule
+Argument & Required & Default & Description \\
+\midrule
+\texttt{--session-dir} & Yes & ---           & Session output directory \\
+\texttt{--expt}        & No  & \texttt{anta} & Experiment name prefix \\
+\texttt{--output}      & No  & None          & Export path (.csv or .json) \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Output Format Examples}
+
+\subsubsection{JSON Output}
+
+\begin{lstlisting}[language={}, caption={Example JSON output structure}]
+{
+  "ztd": [
+    {
+      "station": "CAS1",
+      "epoch_idx": 0,
+      "ztd_m": 2.25488495,
+      "ztd_mm": 2254.9,
+      "adjustment_m": -0.01066,
+      "sigma_m": 0.005965,
+      "sigma_mm": 6.0
+    },
+    ...
+  ],
+  "positions": {
+    "CAS1": {
+      "lat": "S66:08:28.75536",
+      "lon": "E110:31:10.94408",
+      "radius_km": 6360.25875878,
+      "lat_adj_m": 0.00197,
+      "lon_adj_m": -0.00239,
+      "radius_adj_m": -0.00221,
+      ...
+    }
+  },
+  "baselines": [...],
+  "summary": {
+    "nrms": 0.41331,
+    "postfit_nrms": 0.23542,
+    "num_ambiguities": 89,
+    "wl_fixed": 87,
+    "nl_fixed": 76,
+    "wl_rate": 97.8,
+    "nl_rate": 85.4,
+    "num_observations": 6110,
+    "num_parameters": 268
+  }
+}
+\end{lstlisting}
+
+\subsubsection{CSV Output}
+
+The CSV export contains ZTD time series data with the following columns:
+
+\begin{table}[ht]
+\centering
+\caption{CSV output columns}
+\begin{tabular}{@{}ll@{}}
+\toprule
+Column & Description \\
+\midrule
+\texttt{station}       & 4-character station name \\
+\texttt{epoch\_idx}    & Epoch index (0 = daily mean) \\
+\texttt{ztd\_mm}       & Zenith total delay (mm) \\
+\texttt{sigma\_mm}     & Formal error (mm) \\
+\texttt{ztd\_m}        & Zenith total delay (m) \\
+\texttt{sigma\_m}      & Formal error (m) \\
+\texttt{adjustment\_m} & Adjustment from a priori (m) \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+
+% ============================================================
+\section{Utility Functions}
+\label{sec:utils}
+
+The \texttt{utils.py} module provides GPS time system conversions and file validation functions used throughout the toolkit.
+
+\begin{lstlisting}[language=Python, caption={Utility function signatures}]
+def doy_to_date(year, doy):
+    """Convert day-of-year to datetime object."""
+
+def date_to_doy(dt):
+    """Convert datetime to (year, doy) tuple."""
+
+def date_to_gps_week(year, month, day):
+    """Calculate GPS week and day-of-week.
+    Returns: (gps_week, dow) where dow 0=Sunday."""
+
+def doy_to_gps_week(year, doy):
+    """Calculate GPS week from year and DOY.
+    Returns: (gps_week, dow)."""
+
+def is_gzip(filepath):
+    """Check if file is valid gzip (magic 0x1f8b)."""
+
+def is_html(filepath):
+    """Check if file content is HTML (CDDIS redirect)."""
+
+def find_gamit_home():
+    """Auto-detect GAMIT installation path.
+    Checks: $GAMIT_HOME, ~/gg, /opt/gg, /usr/local/gg.
+    Raises FileNotFoundError if not found."""
+
+def station_name_short(long_name):
+    """Extract 4-char short name from RINEX 3 long name.
+    e.g., 'MCM400ATA_R_...' -> 'mcm4'."""
+\end{lstlisting}
+
+
+% ============================================================
+\section{Complete Workflow}
+\label{sec:workflow}
+
+This section demonstrates a complete end-to-end processing workflow using PyGAMIT-Bridge with four Antarctic IGS stations.
+
+\subsection{Step-by-Step CLI Workflow}
+
+\begin{lstlisting}[language=bash, caption={Complete workflow using CLI}]
+# === Step 1: Download data ===
+pygamit-bridge download \
+    --stations mcm4,cas1,dav1,maw1 \
+    --year 2025 --start-doy 1 --end-doy 1 \
+    --output ./data/rinex \
+    --products-output ./data/products
+
+# === Step 2: Preprocess for GAMIT ===
+pygamit-bridge preprocess \
+    --year 2025 --doy 1 \
+    --data-dir ./data/rinex \
+    --products-dir ./data/products \
+    --expt-dir ./gamit/expt/2025001 \
+    --gg-dir ~/gg
+
+# === Step 3: Run GAMIT (standard command) ===
+cd ./gamit/expt/2025001
+sh_gamit -d 2025 1 -expt anta -noftp
+
+# === Step 4: Parse results ===
+pygamit-bridge parse \
+    --session-dir ./gamit/expt/2025001 \
+    --expt anta \
+    -o results.json
+\end{lstlisting}
+
+\subsection{Step-by-Step Python API Workflow}
+
+\begin{lstlisting}[language=Python, caption={Complete workflow using Python API}]
+from pygamit_bridge.downloader import (
+    download_rinex, download_products
+)
+from pygamit_bridge.preprocessor import (
+    prepare_rinex, prepare_products,
+    prepare_broadcast, link_tables
+)
+from pygamit_bridge.batch_fallback import write_batch_file
+from pygamit_bridge.parser import (
+    parse_session, export_json
+)
+
+# --- Configuration ---
+YEAR = 2025
+DOY = 1
+STATIONS = ['mcm4', 'cas1', 'dav1', 'maw1']
+DATA_DIR = './data/rinex'
+PROD_DIR = './data/products'
+EXPT_DIR = './gamit/expt/2025001'
+
+# --- Step 1: Download ---
+for stn in STATIONS:
+    result = download_rinex(stn, YEAR, DOY, DATA_DIR)
+    print(f"  {stn}: {result}")
+
+prod_results = download_products(YEAR, DOY, PROD_DIR)
+for r in prod_results:
+    print(f"  {r}")
+
+# --- Step 2: Preprocess ---
+n = prepare_rinex(YEAR, DOY, DATA_DIR, EXPT_DIR, STATIONS)
+print(f"RINEX: {n} stations processed")
+
+m = prepare_products(YEAR, DOY, PROD_DIR, EXPT_DIR)
+print(f"Products: {m} files ready")
+
+prepare_broadcast(YEAR, DOY, DATA_DIR, EXPT_DIR)
+link_tables('~/gg', EXPT_DIR)
+
+# Generate fallback batch file (insurance)
+write_batch_file('anta', YEAR, f"{DOY:03d}",
+                 output_dir=EXPT_DIR,
+                 rinex_dir=EXPT_DIR)
+
+# --- Step 3: Run GAMIT (externally) ---
+# sh_gamit -d 2025 1 -expt anta -noftp
+
+# --- Step 4: Parse results ---
+results = parse_session(EXPT_DIR, expt='anta')
+print(f"ZTD records: {len(results['ztd'])}")
+print(f"Stations:    {len(results['positions'])}")
+print(f"nrms:        {results['summary']['nrms']}")
+export_json(results, 'results.json')
+\end{lstlisting}
+
+\subsection{Example Script}
+
+A ready-to-use example script is provided at \texttt{examples/process\_day.py}. Usage:
+
+\begin{lstlisting}[language=bash, caption={Running the example script}]
+python3 examples/process_day.py \
+    --year 2025 --doy 1 \
+    --stations mcm4,cas1,dav1,maw1 \
+    --data-dir ./data/rinex \
+    --products-dir ./data/products \
+    --expt-dir ./gamit/expt/2025001 \
+    --expt anta
+\end{lstlisting}
+
+
+% ============================================================
+\section{Troubleshooting}
+\label{sec:troubleshoot}
+
+\subsection{Download Issues}
+
+\begin{description}[style=nextline, leftmargin=1.5em]
+  \item[\texttt{FAIL: mcm4 2025 001}]
+    The downloader could not retrieve data for this station. Common causes:
+    \begin{itemize}
+      \item Earthdata credentials not configured (check \texttt{\~{}/.netrc})
+      \item \texttt{\~{}/.urs\_cookies} file does not exist
+      \item Station is temporarily unavailable on CDDIS
+      \item Network connectivity issues
+    \end{itemize}
+
+  \item[Downloaded file is an HTML page]
+    The toolkit's built-in HTML detection should reject these files automatically. If this persists, verify your Earthdata credentials at \url{https://urs.earthdata.nasa.gov}.
+\end{description}
+
+\begin{tipbox}
+Test your Earthdata setup manually:
+\begin{lstlisting}[language=bash, basicstyle=\ttfamily\small]
+wget --no-check-certificate \
+    --load-cookies ~/.urs_cookies \
+    --save-cookies ~/.urs_cookies \
+    --auth-no-challenge \
+    --keep-session-cookies \
+    -O test.gz \
+    https://cddis.nasa.gov/archive/gnss/data/daily/2025/001/25d/MCM400ATA_R_20250010000_01D_30S_MO.crx.gz
+file test.gz   # Should report "gzip compressed data"
+\end{lstlisting}
+\end{tipbox}
+
+\subsection{RINEX Conversion Issues}
+
+\begin{description}[style=nextline, leftmargin=1.5em]
+  \item[\texttt{convert\_rinex3\_to\_rinex2()} returns \texttt{False}]
+    The file may not contain GPS observations. The converter only maps GPS observation types; if the file contains only GLONASS or Galileo data, the conversion will fail.
+
+  \item[\texttt{CRX2RNX} not found]
+    The preprocessor searches for \texttt{CRX2RNX} in the following locations:
+    \begin{enumerate}
+      \item System PATH (\texttt{CRX2RNX} or \texttt{crx2rnx})
+      \item \texttt{\~{}/gg/bin/crx2rnx}
+      \item \texttt{/usr/local/bin/crx2rnx}
+    \end{enumerate}
+    Ensure the utility is installed in one of these locations.
+\end{description}
+
+\subsection{makexp Batch File Issues}
+
+\begin{description}[style=nextline, leftmargin=1.5em]
+  \item[Empty batch file after conversion]
+    Use the batch fallback generator as a safety net. After preprocessing, check whether the \texttt{.makex.batch} file was generated:
+    \begin{lstlisting}[language=bash, basicstyle=\ttfamily\small]
+cat ./gamit/expt/2025001/anta.makex.batch
+\end{lstlisting}
+    If the file is empty or missing, the \texttt{preprocess} command will automatically generate a fallback batch file.
+\end{description}
+
+\subsection{Parsing Issues}
+
+\begin{description}[style=nextline, leftmargin=1.5em]
+  \item[No ZTD records extracted]
+    Check that:
+    \begin{itemize}
+      \item The \texttt{--expt} prefix matches your GAMIT experiment name (default: \texttt{anta})
+      \item O-files exist in the session directory (files named \texttt{oanta*.*})
+      \item The GAMIT run completed successfully
+    \end{itemize}
+
+  \item[nrms is \texttt{None}]
+    The parser first searches summary files, then falls back to q-files. If the GAMIT run terminated abnormally, these files may not have been generated.
+\end{description}
+
+
+% ============================================================
+\section{CLI Reference Summary}
+\label{sec:cli-ref}
+
+\begin{lstlisting}[language=bash, caption={Global CLI help}]
+pygamit-bridge --help
+pygamit-bridge --version
+\end{lstlisting}
+
+\begin{table}[ht]
+\centering
+\caption{Available subcommands}
+\begin{tabular}{@{}ll@{}}
+\toprule
+Subcommand & Description \\
+\midrule
+\texttt{download}   & Download GNSS data and products from CDDIS \\
+\texttt{convert}    & Convert RINEX 3 to RINEX 2.11 \\
+\texttt{preprocess} & Preprocess data for GAMIT processing \\
+\texttt{parse}      & Parse GAMIT output files \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+For detailed help on any subcommand:
+\begin{lstlisting}[language=bash]
+pygamit-bridge <subcommand> --help
+\end{lstlisting}
+
+
+% ============================================================
+\section{License}
+
+PyGAMIT-Bridge is released under the MIT License. See the \texttt{LICENSE} file in the repository for details.
+
+\vspace{1em}
+\noindent\textbf{Repository:} \url{https://github.com/geumjin99/pygamit-bridge}
+
+\vspace{0.5em}
+\noindent\textbf{Bug Reports:} \url{https://github.com/geumjin99/pygamit-bridge/issues}
+
+
+\end{document}
