@@ -1,16 +1,15 @@
-# Reproducing the illustrative example (SoftwareX paper)
+# Reproducing the illustrative example
 
-This recipe regenerates the three-station high-latitude example used in the
-paper (Tables "Solution-quality metrics" and "Daily-mean ZTD") from scratch
+This recipe regenerates the three-station high-latitude example bundled with
+this repository (solution-quality metrics and daily-mean ZTD) from scratch
 against a local GAMIT/GLOBK installation. The network is the two Antarctic
 stations MCM4 (McMurdo) and SYOG (Syowa) tied to the mid-latitude global IGS
-station AUCK (Auckland). Run it whenever you need to refresh the numbers in
-`paper/softwarex.tex`. A pre-extracted `examples/results.json` from this run is
-committed alongside this file for reference.
+station AUCK (Auckland). A pre-extracted `examples/results.json` from this run
+is committed alongside this file as a reference output.
 
 ## Prerequisites
 
-- GAMIT/GLOBK ≥ 10.6 installed and on `PATH` (`~/gg`); 10.71 used for the paper.
+- GAMIT/GLOBK ≥ 10.6 installed and on `PATH` (`~/gg`); 10.71 used here.
 - `CRX2RNX` (Hatanaka) on `PATH`.
 - A NASA Earthdata account with CDDIS access. Put credentials in `~/.netrc`:
   ```
@@ -18,7 +17,7 @@ committed alongside this file for reference.
   ```
 - PyGAMIT-Bridge installed: `pip install -e .` from the repo root.
 
-## Configuration used in the paper
+## Example configuration
 
 | Item | Value |
 |------|-------|
@@ -62,24 +61,22 @@ pygamit-bridge parse --session-dir $EXPT/001 --expt anta -o ztd.csv
 pygamit-bridge aggregate ./expt/2024*/001 --expt anta -o ztd_timeseries.csv
 ```
 
-## Mapping results back into the paper
+## Interpreting `results.json`
 
-`results.json` contains everything needed for the two tables:
+`results.json` contains the structured fields summarised below:
 
-- **Table — Solution-quality metrics**: `summary.num_observations`,
+- **Solution-quality metrics**: `summary.num_observations`,
   `summary.num_parameters` / `live_parameters`, `summary.nrms`,
   `summary.postfit_nrms`, `summary.wl_rate` / `wl_fixed` / `num_ambiguities`,
   `summary.nl_rate` / `nl_fixed`.
-- **Table — Daily-mean ZTD**: the `ztd` records with `epoch_idx == 0` give the
+- **Daily-mean ZTD**: the `ztd` records with `epoch_idx == 0` give the
   per-station daily-mean `ztd_mm` and `sigma_mm`; the count of distinct
-  `epoch_idx > 0` segments is the number of resolved piecewise segments (Seg.).
+  `epoch_idx > 0` segments is the number of resolved piecewise segments.
   `parser.summarize_ztd()` returns exactly these per-station fields
   (`ztd_daily_mm`, `sigma_mm`, `n_segments`), and `pygamit-bridge aggregate`
   emits one row per station-day across many sessions.
 
-Update the values in `paper/softwarex.tex` (Tables `tab:quality` and `tab:ztd`)
-with the freshly extracted numbers and recompile.
-
 > Note: exact figures depend on the GAMIT version, the IGS product vintage at
 > download time, and control-table settings, so small differences from the
-> published values are expected and should simply be reported as produced.
+> committed `results.json` are expected and should simply be reported as
+> produced.

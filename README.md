@@ -131,11 +131,10 @@ MIT License. See [LICENSE](LICENSE) for details.
 
 ## Citation
 
-This toolkit is described in the following software paper (in preparation for
-submission to *SoftwareX*):
+If you use PyGAMIT-Bridge in your work, please cite the repository:
 
-> Han, J. et al. PyGAMIT-Bridge: a pure-Python orchestration layer for
-> reproducible GAMIT/GLOBK processing with modern RINEX and IGS product
-> formats. *SoftwareX* (in preparation).
+> Han, J. PyGAMIT-Bridge: a pure-Python orchestration layer for reproducible
+> GAMIT/GLOBK processing with modern RINEX and IGS product formats.
+> https://github.com/geumjin99/pygamit-bridge
 
-A BibTeX entry will be provided once the paper is published.
+An archival DOI will be added here in a future release.
