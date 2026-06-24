@@ -76,14 +76,18 @@ def decompress_crx_gz(crx_gz_path, output_dir):
     return None
 
 
-def prepare_rinex(year, doy, data_dir, expt_dir, stations=None):
-    """预处理 RINEX 数据：解压、格式转换、短文件名生成。
+def prepare_rinex(year, doy, data_dir, expt_dir, stations=None, convert=False):
+    """预处理 RINEX 数据：解压并生成 GAMIT 短文件名。
 
     对每个站点执行：
     1. 查找 Compact RINEX3 文件 (.crx.gz)
     2. 解压为 RINEX3 (.rnx)
-    3. 转换为 RINEX 2.11（调用 converter 模块）
-    4. 生成 GAMIT 短文件名（如 mcm40010.25o）
+    3. 生成 GAMIT 短文件名（如 mcm40010.25o）
+
+    默认 (``convert=False``) 保留多系统 RINEX 3 内容直接交给 GAMIT
+    （GAMIT >= 10.6 原生读取 RINEX 3），从而不丢弃 GLONASS/Galileo/BeiDou
+    等非 GPS 观测。仅当 ``convert=True`` 时才额外调用 converter 模块转换为
+    RINEX 2.11（GPS-only），用于不支持 RINEX 3 的 legacy GAMIT 或下游工具。
 
     Args:
         year: 4 位年份
@@ -91,6 +95,7 @@ def prepare_rinex(year, doy, data_dir, expt_dir, stations=None):
         data_dir: 原始数据根目录（包含 year/doy 子目录）
         expt_dir: GAMIT 实验目录
         stations: 站点列表（None 表示自动检测）
+        convert: 是否额外转换为 RINEX 2.11 (GPS-only)，默认 False（透传 RINEX3）
 
     Returns:
         成功处理的站点数
@@ -115,25 +120,27 @@ def prepare_rinex(year, doy, data_dir, expt_dir, stations=None):
         if stations and stn not in stations:
             continue
 
-        # 解压
+        # 解压为 RINEX 3 (.rnx)
         rnx_path = decompress_crx_gz(crx_gz, expt_dir)
         if not rnx_path:
             continue
 
-        # RINEX3 → RINEX2
-        rnx2_path = os.path.join(expt_dir, f"{stn}_rnx2.tmp")
-        if not convert_rinex3_to_rinex2(rnx_path, rnx2_path):
-            os.remove(rnx_path)
-            continue
-
-        # 生成 GAMIT 短文件名: ssss{doy}0.{yr2}o
+        # GAMIT 短文件名: ssss{doy}0.{yr2}o
         short_name = f"{stn}{doy_str}0.{yr2}o"
         short_path = os.path.join(expt_dir, short_name)
-        shutil.move(rnx2_path, short_path)
 
-        # 清理中间文件
-        if os.path.exists(rnx_path):
-            os.remove(rnx_path)
+        if convert:
+            # legacy 路径：转换为 RINEX 2.11 (GPS-only)
+            rnx2_path = os.path.join(expt_dir, f"{stn}_rnx2.tmp")
+            if not convert_rinex3_to_rinex2(rnx_path, rnx2_path):
+                os.remove(rnx_path)
+                continue
+            shutil.move(rnx2_path, short_path)
+            if os.path.exists(rnx_path):
+                os.remove(rnx_path)
+        else:
+            # 默认路径：多系统 RINEX 3 透传给 GAMIT
+            shutil.move(rnx_path, short_path)
 
         station_count += 1
 

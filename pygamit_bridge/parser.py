@@ -17,6 +17,31 @@ import json
 import glob
 
 
+def _select_solution_files(session_dir, kind, expt):
+    """选出某类 GAMIT 输出文件（o/q-file），优先返回最终解。
+
+    一次 sh_gamit 运行常产生多遍 SOLVE 的输出，例如预解 ``oantap.001``
+    与最终（GLOBK-ready、模糊度固定）解 ``oantaa.001``。两者 nrms/模糊度
+    统计不同，报告时应使用最终解。GAMIT 约定最终解文件名在扩展名前以
+    ``a`` 结尾，故优先选取该组；若不存在则回退到全部匹配文件。
+
+    Args:
+        session_dir: 会话目录
+        kind: 'o' 或 'q'
+        expt: 实验名前缀
+
+    Returns:
+        排序后的文件路径列表（最终解优先）
+    """
+    files = glob.glob(os.path.join(session_dir, f'{kind}{expt}*.*'))
+    if not files:
+        files = glob.glob(os.path.join(session_dir, f'{kind}*.*'))
+    # 文件名（去扩展名）以 'a' 结尾的为最终解
+    finals = [f for f in files
+              if os.path.basename(f).split('.')[0].endswith('a')]
+    return sorted(finals) if finals else sorted(files)
+
+
 def parse_ztd(session_dir, expt='anta'):
     """从 GAMIT o-file/q-file 提取 ZTD 估计值。
 
@@ -41,9 +66,7 @@ def parse_ztd(session_dir, expt='anta'):
     daily_ztd = {}  # 存储每站日均值: station → ztd_m
 
     # 查找 o-file
-    ofiles = glob.glob(os.path.join(session_dir, f'o{expt}*.*'))
-    if not ofiles:
-        ofiles = glob.glob(os.path.join(session_dir, 'o*.*'))
+    ofiles = _select_solution_files(session_dir, 'o', expt)
 
     # ATMZEN 行解析正则
     # 实际格式（注意 apriori 和 adjustment 紧密相连，无空格！）：
@@ -124,9 +147,7 @@ def parse_positions(session_dir, expt='anta'):
     """
     positions = {}
 
-    ofiles = glob.glob(os.path.join(session_dir, f'o{expt}*.*'))
-    if not ofiles:
-        ofiles = glob.glob(os.path.join(session_dir, 'o*.*'))
+    ofiles = _select_solution_files(session_dir, 'o', expt)
 
     # 匹配 GEOC LAT/LONG 行和 RADIUS 行
     coord_re = re.compile(
@@ -185,9 +206,7 @@ def parse_baselines(session_dir, expt='anta'):
     """
     baselines = []
 
-    ofiles = glob.glob(os.path.join(session_dir, f'o{expt}*.*'))
-    if not ofiles:
-        ofiles = glob.glob(os.path.join(session_dir, 'o*.*'))
+    ofiles = _select_solution_files(session_dir, 'o', expt)
 
     for ofile in ofiles:
         with open(ofile, 'r', errors='replace') as f:
@@ -284,9 +303,7 @@ def parse_summary(session_dir, expt='anta'):
                         summary['nl_rate'] = float(nl_match.group(1))
 
     # 从 o-file 提取观测值数和参数数
-    ofiles = glob.glob(os.path.join(session_dir, f'o{expt}*.*'))
-    if not ofiles:
-        ofiles = glob.glob(os.path.join(session_dir, 'o*.*'))
+    ofiles = _select_solution_files(session_dir, 'o', expt)
     for ofile in ofiles:
         with open(ofile, 'r', errors='replace') as f:
             for line in f:
@@ -301,20 +318,56 @@ def parse_summary(session_dir, expt='anta'):
                     if len(nums) >= 2:
                         summary['live_parameters'] = int(nums[1])
 
-    # 回退：从 q-file 提取 nrms
-    if summary['nrms'] is None:
-        qfiles = glob.glob(os.path.join(session_dir, f'q{expt}*.*'))
-        if not qfiles:
-            qfiles = glob.glob(os.path.join(session_dir, 'q*.*'))
+    # 从 q-file 提取质量指标（sh_gamit 未生成 *.summary 时的主路径）。
+    # q-file 中可读到的标准行（GAMIT solve 输出）：
+    #   " Prefit nrms:  0.77653E+00    Postfit nrms: 0.23629E+00"
+    #   "   59 Phase ambiguities in solution"
+    #   "   58 WL ambiguities resolved by AUTCLN"
+    #   "   40 NL ambiguities resolved"
+    # 一个 q-file 内会出现多组 nrms（约束/松弛、模糊度自由/固定解）；
+    # 取第一组 Prefit/Postfit（约束解、模糊度自由）作为代表性质量指标。
+    needs_qfile = any(summary[k] is None for k in
+                      ('nrms', 'postfit_nrms', 'num_ambiguities',
+                       'wl_fixed', 'nl_fixed'))
+    if needs_qfile:
+        qfiles = _select_solution_files(session_dir, 'q', expt)
         for qf in qfiles:
             with open(qf, 'r', errors='replace') as f:
                 for line in f:
-                    if 'nrms' in line.lower():
-                        match = re.search(r'([\d.]+E[+-]?\d+|[\d.]+)', line)
-                        if match:
-                            val = float(match.group(1))
-                            if 0 < val < 10:
-                                summary['nrms'] = round(val, 5)
+                    # Prefit/Postfit nrms（取首次出现）
+                    if 'nrms' in line and summary['nrms'] is None:
+                        pre = re.search(r'Prefit\s+nrms\s*:\s*([\d.]+E[+-]?\d+)', line)
+                        post = re.search(r'Postfit\s+nrms\s*:\s*([\d.]+E[+-]?\d+)', line)
+                        if pre:
+                            summary['nrms'] = round(float(pre.group(1)), 5)
+                        if post and summary['postfit_nrms'] is None:
+                            summary['postfit_nrms'] = round(float(post.group(1)), 5)
+                    # 进入解的相位模糊度总数
+                    if summary['num_ambiguities'] is None and \
+                            'Phase ambiguities in solution' in line:
+                        m = re.search(r'(\d+)\s+Phase ambiguities in solution', line)
+                        if m:
+                            summary['num_ambiguities'] = int(m.group(1))
+                    # AUTCLN 解算的宽巷模糊度数
+                    if summary['wl_fixed'] is None and \
+                            'WL ambiguities resolved' in line:
+                        m = re.search(r'(\d+)\s+WL ambiguities resolved', line)
+                        if m:
+                            summary['wl_fixed'] = int(m.group(1))
+                    # 解算的窄巷模糊度数
+                    if summary['nl_fixed'] is None and \
+                            'NL ambiguities resolved' in line:
+                        m = re.search(r'(\d+)\s+NL ambiguities resolved', line)
+                        if m:
+                            summary['nl_fixed'] = int(m.group(1))
+
+    # 由计数推导固定率（占进入解的相位模糊度总数的百分比）
+    total = summary['num_ambiguities']
+    if total:
+        if summary['wl_rate'] is None and summary['wl_fixed'] is not None:
+            summary['wl_rate'] = round(100.0 * summary['wl_fixed'] / total, 1)
+        if summary['nl_rate'] is None and summary['nl_fixed'] is not None:
+            summary['nl_rate'] = round(100.0 * summary['nl_fixed'] / total, 1)
 
     return summary
 
@@ -337,6 +390,108 @@ def parse_session(session_dir, expt='anta'):
         'baselines': parse_baselines(session_dir, expt),
         'summary': parse_summary(session_dir, expt),
     }
+
+
+def summarize_ztd(ztd):
+    """按站汇总单日 ZTD 为紧凑统计，便于时间序列分析。
+
+    GAMIT o-file 对每站给出一个日均参数（历元 0）以及若干分段
+    （piecewise-linear）历元估计；约束解与松弛解会重复出现，这里按
+    (station, epoch_idx) 去重后汇总。
+
+    Args:
+        ztd: parse_ztd 的返回列表，或 parse_session 结果字典
+
+    Returns:
+        {station: {'ztd_daily_mm': float,   # GAMIT 日均参数（历元 0）
+                   'sigma_mm': float,        # 日均参数形式误差
+                   'ztd_mean_mm': float,     # 分段历元的均值
+                   'ztd_std_mm': float,      # 分段历元的标准差
+                   'n_segments': int}}       # 有效分段历元数
+    """
+    if isinstance(ztd, dict):
+        ztd = ztd.get('ztd', [])
+
+    daily = {}        # station -> (ztd_mm, sigma_mm)
+    segments = {}     # station -> {epoch_idx: ztd_mm}（去重）
+    for rec in ztd:
+        st = rec['station']
+        if rec['epoch_idx'] == 0:
+            daily.setdefault(st, (rec['ztd_mm'], rec['sigma_mm']))
+        else:
+            segments.setdefault(st, {}).setdefault(rec['epoch_idx'], rec['ztd_mm'])
+
+    out = {}
+    for st in sorted(set(daily) | set(segments)):
+        vals = list(segments.get(st, {}).values())
+        n = len(vals)
+        mean = round(sum(vals) / n, 1) if n else None
+        if n > 1:
+            var = sum((v - sum(vals) / n) ** 2 for v in vals) / n
+            std = round(var ** 0.5, 1)
+        else:
+            std = 0.0 if n == 1 else None
+        d_mm, d_sig = daily.get(st, (mean, None))
+        out[st] = {
+            'ztd_daily_mm': d_mm,
+            'sigma_mm': d_sig,
+            'ztd_mean_mm': mean,
+            'ztd_std_mm': std,
+            'n_segments': n,
+        }
+    return out
+
+
+def aggregate_sessions(session_dirs, expt='anta', labels=None):
+    """跨多个会话（多天/多网）聚合 ZTD 与质量指标为整洁长表。
+
+    面向时间序列用例：每个会话目录贡献「每站一行」的日均 ZTD 及该会话
+    的解算质量指标，输出可直接喂给绘图/统计的长格式（tidy）行列表。
+
+    Args:
+        session_dirs: 会话目录路径列表
+        expt: 实验名前缀（对全部会话一致）
+        labels: 与 session_dirs 等长的标签（如日期/DOY）；缺省用目录名
+
+    Returns:
+        行列表: [{'session', 'station', 'ztd_daily_mm', 'sigma_mm',
+                  'ztd_mean_mm', 'ztd_std_mm', 'n_segments',
+                  'prefit_nrms', 'postfit_nrms', 'wl_rate', 'nl_rate'}, ...]
+    """
+    if labels is not None and len(labels) != len(session_dirs):
+        raise ValueError('labels 必须与 session_dirs 等长')
+
+    rows = []
+    for i, sdir in enumerate(session_dirs):
+        label = labels[i] if labels else os.path.basename(os.path.normpath(sdir))
+        summary = parse_summary(sdir, expt)
+        per_station = summarize_ztd(parse_ztd(sdir, expt))
+        for st, s in per_station.items():
+            rows.append({
+                'session': label,
+                'station': st,
+                'ztd_daily_mm': s['ztd_daily_mm'],
+                'sigma_mm': s['sigma_mm'],
+                'ztd_mean_mm': s['ztd_mean_mm'],
+                'ztd_std_mm': s['ztd_std_mm'],
+                'n_segments': s['n_segments'],
+                'prefit_nrms': summary.get('nrms'),
+                'postfit_nrms': summary.get('postfit_nrms'),
+                'wl_rate': summary.get('wl_rate'),
+                'nl_rate': summary.get('nl_rate'),
+            })
+    return rows
+
+
+def export_timeseries_csv(rows, output_path):
+    """将 aggregate_sessions 的长表行导出为 CSV。"""
+    fields = ['session', 'station', 'ztd_daily_mm', 'sigma_mm',
+              'ztd_mean_mm', 'ztd_std_mm', 'n_segments',
+              'prefit_nrms', 'postfit_nrms', 'wl_rate', 'nl_rate']
+    with open(output_path, 'w', newline='') as f:
+        writer = csv.DictWriter(f, fieldnames=fields)
+        writer.writeheader()
+        writer.writerows(rows)
 
 
 def export_csv(results, output_path):

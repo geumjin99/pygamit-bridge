@@ -5,15 +5,19 @@ from setuptools import setup, find_packages
 
 setup(
     name='pygamit-bridge',
-    version='0.1.0',
-    description='A Python toolkit for automated GAMIT/GLOBK processing '
-                'with modern RINEX and IGS product formats',
+    version='0.2.0',
+    description='A pure-Python orchestration layer around GAMIT/GLOBK for '
+                'modern RINEX and IGS product formats',
     author='Jinzhen Han',
     author_email='geumjin99@gmail.com',
     url='https://github.com/geumjin99/pygamit-bridge',
-    packages=find_packages(),
+    license='MIT',
+    packages=find_packages(exclude=['tests', 'tests.*']),
     python_requires='>=3.7',
     install_requires=[],  # 仅使用标准库
+    extras_require={
+        'dev': ['pytest>=6.0'],
+    },
     entry_points={
         'console_scripts': [
             'pygamit-bridge=pygamit_bridge.cli:main',

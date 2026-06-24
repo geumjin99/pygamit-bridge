@@ -24,3 +24,6 @@ missfont.log
 .DS_Store
 Thumbs.db
 paper/
+
+# Internal working notes (not for public repo)
+PROGRESS.md

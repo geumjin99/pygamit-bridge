@@ -56,8 +56,9 @@ def cmd_preprocess(args):
 
     print(f"[1/4] 预处理 RINEX...")
     n = prepare_rinex(args.year, args.doy, args.data_dir,
-                      args.expt_dir, stations)
-    print(f"  {n} 站处理完成")
+                      args.expt_dir, stations, convert=args.convert_rinex2)
+    mode = 'RINEX 2.11 (GPS-only)' if args.convert_rinex2 else 'RINEX 3 passthrough (multi-GNSS)'
+    print(f"  {n} 站处理完成 [{mode}]")
 
     print(f"[2/4] 准备 IGS 产品...")
     m = prepare_products(args.year, args.doy,
@@ -75,6 +76,17 @@ def cmd_preprocess(args):
         print(f"  完成")
 
     print(f"\n预处理完成: {args.year} DOY {args.doy:03d}")
+
+
+def cmd_stationinfo(args):
+    """stationinfo 子命令处理"""
+    from .station_info import generate_from_dir, generate_station_info
+
+    if args.inputs:
+        n = generate_station_info(args.inputs, args.output)
+    else:
+        n = generate_from_dir(args.rinex_dir, args.output)
+    print(f"[OK] station.info 生成完成: {n} 条记录 → {args.output}")
 
 
 def cmd_parse(args):
@@ -95,8 +107,8 @@ def cmd_parse(args):
     print(f"  Baselines:    {len(baselines)}")
     if summary.get('nrms'):
         print(f"  nrms:         {summary['nrms']}")
-    if summary.get('ambiguity_rate'):
-        print(f"  Ambiguity:    {summary['ambiguity_rate']}%")
+    if summary.get('wl_rate') is not None:
+        print(f"  WL/NL fixed:  {summary['wl_rate']}% / {summary.get('nl_rate')}%")
 
     # 导出
     if args.output:
@@ -107,13 +119,34 @@ def cmd_parse(args):
         print(f"\n  → Exported to {args.output}")
 
 
+def cmd_aggregate(args):
+    """aggregate 子命令处理：跨多会话聚合 ZTD 时间序列"""
+    from .parser import aggregate_sessions, export_timeseries_csv
+
+    session_dirs = list(args.session_dirs)
+    labels = args.labels.split(',') if args.labels else None
+    if labels and len(labels) != len(session_dirs):
+        print(f"[FAIL] --labels 数量({len(labels)})与会话数({len(session_dirs)})不一致")
+        sys.exit(1)
+
+    rows = aggregate_sessions(session_dirs, args.expt, labels)
+    print(f"=== Aggregated {len(session_dirs)} session(s), {len(rows)} station-rows ===")
+    for r in rows:
+        print(f"  {r['session']:>10}  {r['station']:<5} "
+              f"ZTD={r['ztd_daily_mm']} mm  postfit nrms={r['postfit_nrms']}")
+
+    if args.output:
+        export_timeseries_csv(rows, args.output)
+        print(f"\n  → Exported {len(rows)} rows to {args.output}")
+
+
 def main():
     """CLI 主入口"""
     parser = argparse.ArgumentParser(
         prog='pygamit-bridge',
         description='PyGAMIT-Bridge: GAMIT/GLOBK 现代数据格式桥接工具包',
     )
-    parser.add_argument('--version', action='version', version='0.1.0')
+    parser.add_argument('--version', action='version', version='0.2.0')
     subparsers = parser.add_subparsers(dest='command', help='子命令')
 
     # --- download ---
@@ -141,6 +174,19 @@ def main():
     p_pp.add_argument('--expt-dir', required=True, help='GAMIT 实验目录')
     p_pp.add_argument('--stations', default=None, help='站点过滤(逗号分隔)')
     p_pp.add_argument('--gg-dir', default=None, help='GAMIT 安装目录')
+    p_pp.add_argument('--convert-rinex2', action='store_true',
+                      help='额外转换为 RINEX 2.11 (GPS-only,用于 legacy GAMIT);'
+                           '默认透传多系统 RINEX 3')
+
+    # --- stationinfo ---
+    p_si = subparsers.add_parser('stationinfo',
+                                 help='从 RINEX 头生成 GAMIT station.info')
+    p_si.add_argument('--rinex-dir', default=None,
+                      help='包含 RINEX 观测文件的目录')
+    p_si.add_argument('inputs', nargs='*',
+                      help='指定的 RINEX 文件(可选,优先于 --rinex-dir)')
+    p_si.add_argument('--output', '-o', default='station.info',
+                      help='station.info 输出路径')
 
     # --- parse ---
     p_ps = subparsers.add_parser('parse', help='解析 GAMIT 输出')
@@ -148,6 +194,17 @@ def main():
     p_ps.add_argument('--expt', default='anta', help='实验名前缀')
     p_ps.add_argument('--output', '-o', default=None,
                       help='导出路径 (.csv 或 .json)')
+
+    # --- aggregate ---
+    p_ag = subparsers.add_parser('aggregate',
+                                 help='跨多个会话聚合 ZTD 时间序列')
+    p_ag.add_argument('session_dirs', nargs='+',
+                      help='一个或多个 GAMIT 会话输出目录')
+    p_ag.add_argument('--expt', default='anta', help='实验名前缀')
+    p_ag.add_argument('--labels', default=None,
+                      help='与会话目录等长的标签(逗号分隔,如日期/DOY)')
+    p_ag.add_argument('--output', '-o', default=None,
+                      help='导出时间序列 CSV 路径')
 
     args = parser.parse_args()
 
@@ -159,7 +216,9 @@ def main():
         'download': cmd_download,
         'convert': cmd_convert,
         'preprocess': cmd_preprocess,
+        'stationinfo': cmd_stationinfo,
         'parse': cmd_parse,
+        'aggregate': cmd_aggregate,
     }[args.command](args)
 
 

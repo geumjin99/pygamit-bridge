@@ -1,0 +1,475 @@
+{
+  "ztd": [
+    {
+      "station": "AUCK",
+      "epoch_idx": 0,
+      "ztd_m": 2.38163631,
+      "ztd_mm": 2381.6,
+      "adjustment_m": -0.00583,
+      "sigma_m": 0.005445,
+      "sigma_mm": 5.4
+    },
+    {
+      "station": "MCM4",
+      "epoch_idx": 0,
+      "ztd_m": 2.21147964,
+      "ztd_mm": 2211.5,
+      "adjustment_m": -0.02364,
+      "sigma_m": 0.001626,
+      "sigma_mm": 1.6
+    },
+    {
+      "station": "SYOG",
+      "epoch_idx": 0,
+      "ztd_m": 2.23941836,
+      "ztd_mm": 2239.4,
+      "adjustment_m": -0.03004,
+      "sigma_m": 0.004125,
+      "sigma_mm": 4.1
+    },
+    {
+      "station": "AUCK",
+      "epoch_idx": 1,
+      "ztd_m": 2.36512254,
+      "ztd_mm": 2365.1,
+      "adjustment_m": -0.01662,
+      "sigma_m": 0.008083,
+      "sigma_mm": 8.1
+    },
+    {
+      "station": "AUCK",
+      "epoch_idx": 2,
+      "ztd_m": 2.37741132,
+      "ztd_mm": 2377.4,
+      "adjustment_m": -0.004335,
+      "sigma_m": 0.007226,
+      "sigma_mm": 7.2
+    },
+    {
+      "station": "AUCK",
+      "epoch_idx": 3,
+      "ztd_m": 2.3751968,
+      "ztd_mm": 2375.2,
+      "adjustment_m": -0.00655,
+      "sigma_m": 0.005293,
+      "sigma_mm": 5.3
+    },
+    {
+      "station": "AUCK",
+      "epoch_idx": 4,
+      "ztd_m": 2.37870492,
+      "ztd_mm": 2378.7,
+      "adjustment_m": -0.003042,
+      "sigma_m": 0.003843,
+      "sigma_mm": 3.8
+    },
+    {
+      "station": "AUCK",
+      "epoch_idx": 5,
+      "ztd_m": 2.37667466,
+      "ztd_mm": 2376.7,
+      "adjustment_m": -0.005072,
+      "sigma_m": 0.004845,
+      "sigma_mm": 4.8
+    },
+    {
+      "station": "AUCK",
+      "epoch_idx": 6,
+      "ztd_m": 2.37800952,
+      "ztd_mm": 2378.0,
+      "adjustment_m": -0.003737,
+      "sigma_m": 0.004852,
+      "sigma_mm": 4.9
+    },
+    {
+      "station": "AUCK",
+      "epoch_idx": 7,
+      "ztd_m": 2.37233113,
+      "ztd_mm": 2372.3,
+      "adjustment_m": -0.009415,
+      "sigma_m": 0.004788,
+      "sigma_mm": 4.8
+    },
+    {
+      "station": "AUCK",
+      "epoch_idx": 13,
+      "ztd_m": 2.37868356,
+      "ztd_mm": 2378.7,
+      "adjustment_m": -0.003063,
+      "sigma_m": 0.01376,
+      "sigma_mm": 13.8
+    },
+    {
+      "station": "MCM4",
+      "epoch_idx": 4,
+      "ztd_m": 2.20993364,
+      "ztd_mm": 2209.9,
+      "adjustment_m": -0.001644,
+      "sigma_m": 0.002274,
+      "sigma_mm": 2.3
+    },
+    {
+      "station": "MCM4",
+      "epoch_idx": 5,
+      "ztd_m": 2.20822909,
+      "ztd_mm": 2208.2,
+      "adjustment_m": -0.003348,
+      "sigma_m": 0.002351,
+      "sigma_mm": 2.4
+    },
+    {
+      "station": "MCM4",
+      "epoch_idx": 6,
+      "ztd_m": 2.20565619,
+      "ztd_mm": 2205.7,
+      "adjustment_m": -0.005921,
+      "sigma_m": 0.002347,
+      "sigma_mm": 2.3
+    },
+    {
+      "station": "MCM4",
+      "epoch_idx": 7,
+      "ztd_m": 2.20254819,
+      "ztd_mm": 2202.5,
+      "adjustment_m": -0.009029,
+      "sigma_m": 0.002434,
+      "sigma_mm": 2.4
+    },
+    {
+      "station": "MCM4",
+      "epoch_idx": 8,
+      "ztd_m": 2.20389908,
+      "ztd_mm": 2203.9,
+      "adjustment_m": -0.007678,
+      "sigma_m": 0.002321,
+      "sigma_mm": 2.3
+    },
+    {
+      "station": "MCM4",
+      "epoch_idx": 9,
+      "ztd_m": 2.20492638,
+      "ztd_mm": 2204.9,
+      "adjustment_m": -0.006651,
+      "sigma_m": 0.00242,
+      "sigma_mm": 2.4
+    },
+    {
+      "station": "SYOG",
+      "epoch_idx": 3,
+      "ztd_m": 2.23616776,
+      "ztd_mm": 2236.2,
+      "adjustment_m": -0.003412,
+      "sigma_m": 0.00455,
+      "sigma_mm": 4.5
+    },
+    {
+      "station": "SYOG",
+      "epoch_idx": 4,
+      "ztd_m": 2.23580882,
+      "ztd_mm": 2235.8,
+      "adjustment_m": -0.003771,
+      "sigma_m": 0.003796,
+      "sigma_mm": 3.8
+    },
+    {
+      "station": "SYOG",
+      "epoch_idx": 5,
+      "ztd_m": 2.23940863,
+      "ztd_mm": 2239.4,
+      "adjustment_m": -0.000171,
+      "sigma_m": 0.003112,
+      "sigma_mm": 3.1
+    },
+    {
+      "station": "SYOG",
+      "epoch_idx": 9,
+      "ztd_m": 2.23896381,
+      "ztd_mm": 2239.0,
+      "adjustment_m": -0.000616,
+      "sigma_m": 0.003532,
+      "sigma_mm": 3.5
+    },
+    {
+      "station": "SYOG",
+      "epoch_idx": 10,
+      "ztd_m": 2.23531447,
+      "ztd_mm": 2235.3,
+      "adjustment_m": -0.004265,
+      "sigma_m": 0.003666,
+      "sigma_mm": 3.7
+    },
+    {
+      "station": "SYOG",
+      "epoch_idx": 11,
+      "ztd_m": 2.23778493,
+      "ztd_mm": 2237.8,
+      "adjustment_m": -0.001795,
+      "sigma_m": 0.003943,
+      "sigma_mm": 3.9
+    },
+    {
+      "station": "SYOG",
+      "epoch_idx": 12,
+      "ztd_m": 2.23885051,
+      "ztd_mm": 2238.9,
+      "adjustment_m": -0.000729,
+      "sigma_m": 0.004131,
+      "sigma_mm": 4.1
+    },
+    {
+      "station": "AUCK",
+      "epoch_idx": 0,
+      "ztd_m": 2.38174662,
+      "ztd_mm": 2381.7,
+      "adjustment_m": -0.00572,
+      "sigma_m": 0.005341,
+      "sigma_mm": 5.3
+    },
+    {
+      "station": "MCM4",
+      "epoch_idx": 0,
+      "ztd_m": 2.2115774,
+      "ztd_mm": 2211.6,
+      "adjustment_m": -0.02355,
+      "sigma_m": 0.001599,
+      "sigma_mm": 1.6
+    },
+    {
+      "station": "SYOG",
+      "epoch_idx": 0,
+      "ztd_m": 2.23957953,
+      "ztd_mm": 2239.6,
+      "adjustment_m": -0.02988,
+      "sigma_m": 0.004052,
+      "sigma_mm": 4.1
+    },
+    {
+      "station": "AUCK",
+      "epoch_idx": 1,
+      "ztd_m": 2.36808098,
+      "ztd_mm": 2368.1,
+      "adjustment_m": -0.01367,
+      "sigma_m": 0.008001,
+      "sigma_mm": 8.0
+    },
+    {
+      "station": "AUCK",
+      "epoch_idx": 2,
+      "ztd_m": 2.37639649,
+      "ztd_mm": 2376.4,
+      "adjustment_m": -0.00535,
+      "sigma_m": 0.007142,
+      "sigma_mm": 7.1
+    },
+    {
+      "station": "AUCK",
+      "epoch_idx": 3,
+      "ztd_m": 2.37365368,
+      "ztd_mm": 2373.7,
+      "adjustment_m": -0.008093,
+      "sigma_m": 0.00523,
+      "sigma_mm": 5.2
+    },
+    {
+      "station": "AUCK",
+      "epoch_idx": 4,
+      "ztd_m": 2.37843778,
+      "ztd_mm": 2378.4,
+      "adjustment_m": -0.003309,
+      "sigma_m": 0.003809,
+      "sigma_mm": 3.8
+    },
+    {
+      "station": "AUCK",
+      "epoch_idx": 5,
+      "ztd_m": 2.37755914,
+      "ztd_mm": 2377.6,
+      "adjustment_m": -0.004187,
+      "sigma_m": 0.004797,
+      "sigma_mm": 4.8
+    },
+    {
+      "station": "AUCK",
+      "epoch_idx": 6,
+      "ztd_m": 2.37788136,
+      "ztd_mm": 2377.9,
+      "adjustment_m": -0.003865,
+      "sigma_m": 0.004819,
+      "sigma_mm": 4.8
+    },
+    {
+      "station": "AUCK",
+      "epoch_idx": 7,
+      "ztd_m": 2.37082447,
+      "ztd_mm": 2370.8,
+      "adjustment_m": -0.01092,
+      "sigma_m": 0.004493,
+      "sigma_mm": 4.5
+    },
+    {
+      "station": "AUCK",
+      "epoch_idx": 8,
+      "ztd_m": 2.38141526,
+      "ztd_mm": 2381.4,
+      "adjustment_m": -0.000331,
+      "sigma_m": 0.004674,
+      "sigma_mm": 4.7
+    },
+    {
+      "station": "MCM4",
+      "epoch_idx": 3,
+      "ztd_m": 2.21143936,
+      "ztd_mm": 2211.4,
+      "adjustment_m": -0.000138,
+      "sigma_m": 0.002308,
+      "sigma_mm": 2.3
+    },
+    {
+      "station": "MCM4",
+      "epoch_idx": 4,
+      "ztd_m": 2.20935652,
+      "ztd_mm": 2209.4,
+      "adjustment_m": -0.002221,
+      "sigma_m": 0.002262,
+      "sigma_mm": 2.3
+    },
+    {
+      "station": "MCM4",
+      "epoch_idx": 5,
+      "ztd_m": 2.20795955,
+      "ztd_mm": 2208.0,
+      "adjustment_m": -0.003618,
+      "sigma_m": 0.002342,
+      "sigma_mm": 2.3
+    },
+    {
+      "station": "MCM4",
+      "epoch_idx": 6,
+      "ztd_m": 2.20532455,
+      "ztd_mm": 2205.3,
+      "adjustment_m": -0.006253,
+      "sigma_m": 0.002331,
+      "sigma_mm": 2.3
+    },
+    {
+      "station": "MCM4",
+      "epoch_idx": 7,
+      "ztd_m": 2.20164719,
+      "ztd_mm": 2201.6,
+      "adjustment_m": -0.00993,
+      "sigma_m": 0.002363,
+      "sigma_mm": 2.4
+    },
+    {
+      "station": "MCM4",
+      "epoch_idx": 8,
+      "ztd_m": 2.20446181,
+      "ztd_mm": 2204.5,
+      "adjustment_m": -0.007116,
+      "sigma_m": 0.002132,
+      "sigma_mm": 2.1
+    },
+    {
+      "station": "MCM4",
+      "epoch_idx": 9,
+      "ztd_m": 2.20259385,
+      "ztd_mm": 2202.6,
+      "adjustment_m": -0.008984,
+      "sigma_m": 0.002135,
+      "sigma_mm": 2.1
+    },
+    {
+      "station": "SYOG",
+      "epoch_idx": 3,
+      "ztd_m": 2.23550927,
+      "ztd_mm": 2235.5,
+      "adjustment_m": -0.00407,
+      "sigma_m": 0.004479,
+      "sigma_mm": 4.5
+    },
+    {
+      "station": "SYOG",
+      "epoch_idx": 4,
+      "ztd_m": 2.23616544,
+      "ztd_mm": 2236.2,
+      "adjustment_m": -0.003414,
+      "sigma_m": 0.003736,
+      "sigma_mm": 3.7
+    },
+    {
+      "station": "SYOG",
+      "epoch_idx": 5,
+      "ztd_m": 2.23939206,
+      "ztd_mm": 2239.4,
+      "adjustment_m": -0.000188,
+      "sigma_m": 0.003071,
+      "sigma_mm": 3.1
+    },
+    {
+      "station": "SYOG",
+      "epoch_idx": 8,
+      "ztd_m": 2.23730029,
+      "ztd_mm": 2237.3,
+      "adjustment_m": -0.002279,
+      "sigma_m": 0.00344,
+      "sigma_mm": 3.4
+    },
+    {
+      "station": "SYOG",
+      "epoch_idx": 10,
+      "ztd_m": 2.2344663,
+      "ztd_mm": 2234.5,
+      "adjustment_m": -0.005113,
+      "sigma_m": 0.003054,
+      "sigma_mm": 3.1
+    }
+  ],
+  "positions": {
+    "AUCK": {
+      "lat": "S36:25:07.68843",
+      "lat_adj_m": -0.0126,
+      "lat_sigma_m": 0.0312,
+      "lon": "E174:50:03.79274",
+      "lon_adj_m": 0.0149,
+      "lon_sigma_m": 0.0201,
+      "radius_km": 6370.70785738,
+      "radius_adj_m": 0.02,
+      "radius_sigma_m": 0.0256
+    },
+    "MCM4": {
+      "lat": "S77:45:31.87003",
+      "lat_adj_m": -0.0019,
+      "lat_sigma_m": 0.0228,
+      "lon": "E166:40:09.61345",
+      "lon_adj_m": 0.021,
+      "lon_sigma_m": 0.0204,
+      "radius_km": 6357.80705099,
+      "radius_adj_m": 0.0266,
+      "radius_sigma_m": 0.0325
+    },
+    "SYOG": {
+      "lat": "S68:52:40.49085",
+      "lat_adj_m": -0.0301,
+      "lat_sigma_m": 0.0235,
+      "lon": "E039:35:01.46930",
+      "lon_adj_m": -0.0074,
+      "lon_sigma_m": 0.0211,
+      "radius_km": 6359.5671333,
+      "radius_adj_m": 0.0298,
+      "radius_sigma_m": 0.0299
+    }
+  },
+  "baselines": [],
+  "summary": {
+    "nrms": 0.77653,
+    "postfit_nrms": 0.23629,
+    "num_ambiguities": 59,
+    "wl_fixed": 58,
+    "nl_fixed": 40,
+    "wl_rate": 98.3,
+    "nl_rate": 67.8,
+    "num_observations": 7766,
+    "num_parameters": 184,
+    "live_parameters": 69
+  }
+}

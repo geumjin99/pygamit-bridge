@@ -1,16 +1,22 @@
 """
-converter.py — Module 2a: RINEX 3 → RINEX 2 格式转换器
+converter.py — optional RINEX 3.x -> RINEX 2.11 compatibility shim.
 
-GAMIT 的核心 Fortran 模块 (makexp) 无法正确解析 RINEX 3.x 头部中
-按卫星系统分组的观测类型声明 (SYS / # / OBS TYPES)。这导致：
-- makexp 不生成 X-file
-- 后续 makex batch 文件为空
-- 整条处理链断裂
+Current GAMIT releases (>= 10.6) read RINEX 3 observation files natively, so
+this conversion is NOT required for the standard workflow; the pre-processor
+passes multi-GNSS RINEX 3 straight through to GAMIT by default
+(see preprocessor.prepare_rinex). This module is provided for two narrower
+cases:
 
-本模块将 RINEX 3.x 观测文件完整转换为 GAMIT 兼容的 RINEX 2.11 格式：
-1. 头部版本标识：3.xx → 2.11
-2. 观测类型映射：3字符码 (C1C,L1C,...) → 2字符码 (C1,L1,...)
-3. 数据格式：每卫星一行 → RINEX2 传统多行格式
+  * legacy GAMIT installations that predate native RINEX 3 support, and
+  * downstream tools that still expect strict RINEX 2.11.
+
+Because RINEX 2.11 only defines GPS and GLONASS observables, the conversion is
+intentionally GPS-only: it extracts the GPS (G) system and maps the
+3-character RINEX 3 observation codes (C1C, L1C, ...) to their 2-character
+RINEX 2 equivalents (C1, L1, ...), and rewrites the per-satellite RINEX 3
+data records into the traditional RINEX 2 multi-line layout. For full
+multi-constellation processing, keep the data in RINEX 3 and let GAMIT read it
+directly.
 """
 
 import os

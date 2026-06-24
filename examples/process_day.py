@@ -23,6 +23,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from pygamit_bridge.preprocessor import (
     prepare_rinex, prepare_products, prepare_broadcast
 )
+from pygamit_bridge.station_info import generate_from_dir
 from pygamit_bridge.batch_fallback import write_batch_file
 from pygamit_bridge.parser import parse_session, export_csv, export_json
 
@@ -36,6 +37,8 @@ def main():
     parser.add_argument('--products-dir', required=True, help='产品目录')
     parser.add_argument('--expt-dir', required=True, help='实验目录')
     parser.add_argument('--expt', default='anta', help='实验名')
+    parser.add_argument('--convert-rinex2', action='store_true',
+                        help='转换为 RINEX 2.11 (GPS-only,用于 legacy GAMIT)')
     args = parser.parse_args()
 
     stations = args.stations.split(',')
@@ -46,10 +49,10 @@ def main():
     print(f"站点: {', '.join(s.upper() for s in stations)}")
     print("=" * 60)
 
-    # Step 1: RINEX 预处理
-    print("\n[Step 1/4] RINEX 数据预处理...")
+    # Step 1: RINEX 预处理（默认透传多系统 RINEX 3 给 GAMIT）
+    print("\n[Step 1/5] RINEX 数据预处理 (multi-GNSS RINEX 3 passthrough)...")
     n = prepare_rinex(args.year, args.doy, args.data_dir,
-                      args.expt_dir, stations)
+                      args.expt_dir, stations, convert=args.convert_rinex2)
     print(f"  → {n} 站 RINEX 处理完成")
 
     if n < 2:
@@ -57,19 +60,28 @@ def main():
         sys.exit(1)
 
     # Step 2: IGS 产品
-    print("\n[Step 2/4] IGS 产品准备...")
+    print("\n[Step 2/5] IGS 产品准备...")
     m = prepare_products(args.year, args.doy,
                          args.products_dir, args.expt_dir)
     print(f"  → {m} 个产品文件就绪")
 
     # Step 3: 广播星历
-    print("\n[Step 3/4] 广播星历...")
+    print("\n[Step 3/5] 广播星历...")
     ok = prepare_broadcast(args.year, args.doy,
                            args.data_dir, args.expt_dir)
     print(f"  → {'成功' if ok else '失败（可能需要手动下载）'}")
 
-    # Step 4: 生成 batch 回退文件
-    print("\n[Step 4/4] 生成 makex batch 回退文件...")
+    # Step 4: 从 RINEX 头生成 station.info
+    print("\n[Step 4/5] 生成 station.info...")
+    tables_dir = os.path.join(args.expt_dir, 'tables')
+    os.makedirs(tables_dir, exist_ok=True)
+    si_count = generate_from_dir(
+        args.expt_dir, os.path.join(tables_dir, 'station.info')
+    )
+    print(f"  → {si_count} 条 station.info 记录")
+
+    # Step 5: 生成 batch 回退文件（可选，用于 legacy/边缘情况）
+    print("\n[Step 5/5] 生成 makex batch 回退文件...")
     batch_path = write_batch_file(
         args.expt, args.year, doy_str,
         output_dir=args.expt_dir,
